@@ -4,7 +4,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 /**
- * User inputs for gas station calculations.
+ * User inputs for comparing two gas stations.
  */
 data class GasCalculatorInput(
     val fuelEfficiencyLPer100Km: Double = 8.5, // Liters per 100 km
@@ -12,12 +12,11 @@ data class GasCalculatorInput(
     val station1DistanceKm: Double = 3.0,       // Distance to Station 1 (km)
     val station1PricePerLiter: Double = 1.65,   // Price at Station 1 ($/L)
     val station2DistanceKm: Double = 12.0,      // Distance to Station 2 (km)
-    val station2PricePerLiter: Double = 1.55,   // Price at Station 2 ($/L)
-    val isRoundTrip: Boolean = true             // Round trip drive
+    val station2PricePerLiter: Double = 1.55    // Price at Station 2 ($/L)
 )
 
 /**
- * Detailed breakdown of comparison results between Station 1 and Station 2.
+ * Comparison result between Station 1 and Station 2.
  */
 data class CalculationResult(
     val station1FillCost: Double,
@@ -37,30 +36,44 @@ data class CalculationResult(
         val absSavings = abs(netSavings)
         return String.format(Locale.US, "$%.2f", absSavings)
     }
-
-    fun formattedValue(value: Double): String {
-        return String.format(Locale.US, "$%.2f", value)
-    }
 }
 
 /**
- * Pure calculation logic for gas station comparison.
+ * User inputs for calculating gas cost for any single trip distance.
+ */
+data class TripCalculatorInput(
+    val tripDistanceKm: Double = 50.0,         // Distance (km)
+    val gasPricePerLiter: Double = 1.65,       // Gas price ($/L)
+    val fuelEfficiencyLPer100Km: Double = 8.5  // Fuel efficiency (L/100km)
+)
+
+/**
+ * Result for single trip gas cost calculation.
+ */
+data class TripCalculationResult(
+    val fuelUsedLiters: Double,
+    val totalTripCost: Double,
+    val costPerKm: Double
+) {
+    fun formattedTotalCost(): String = String.format(Locale.US, "$%.2f", totalTripCost)
+    fun formattedFuelUsed(): String = String.format(Locale.US, "%.2f L", fuelUsedLiters)
+    fun formattedCostPerKm(): String = String.format(Locale.US, "$%.3f / km", costPerKm)
+}
+
+/**
+ * Pure calculation logic for station comparison and single trip calculations.
  */
 object GasCalculator {
 
-    fun calculate(input: GasCalculatorInput): CalculationResult {
-        val tripMultiplier = if (input.isRoundTrip) 2.0 else 1.0
-        
+    fun calculateComparison(input: GasCalculatorInput): CalculationResult {
         // Station 1
-        val totalDistance1Km = input.station1DistanceKm * tripMultiplier
-        val fuelUsed1Liters = (totalDistance1Km / 100.0) * input.fuelEfficiencyLPer100Km
+        val fuelUsed1Liters = (input.station1DistanceKm / 100.0) * input.fuelEfficiencyLPer100Km
         val station1TripCost = fuelUsed1Liters * input.station1PricePerLiter
         val station1FillCost = input.litersToFill * input.station1PricePerLiter
         val station1TotalCost = station1FillCost + station1TripCost
 
         // Station 2
-        val totalDistance2Km = input.station2DistanceKm * tripMultiplier
-        val fuelUsed2Liters = (totalDistance2Km / 100.0) * input.fuelEfficiencyLPer100Km
+        val fuelUsed2Liters = (input.station2DistanceKm / 100.0) * input.fuelEfficiencyLPer100Km
         val station2TripCost = fuelUsed2Liters * input.station2PricePerLiter
         val station2FillCost = input.litersToFill * input.station2PricePerLiter
         val station2TotalCost = station2FillCost + station2TripCost
@@ -82,6 +95,18 @@ object GasCalculator {
             extraTravelCost = extraTravelCost,
             netSavings = netSavings,
             isStation2CheaperOverall = isStation2CheaperOverall
+        )
+    }
+
+    fun calculateTrip(input: TripCalculatorInput): TripCalculationResult {
+        val fuelUsedLiters = (input.tripDistanceKm / 100.0) * input.fuelEfficiencyLPer100Km
+        val totalTripCost = fuelUsedLiters * input.gasPricePerLiter
+        val costPerKm = if (input.tripDistanceKm > 0.0) totalTripCost / input.tripDistanceKm else 0.0
+
+        return TripCalculationResult(
+            fuelUsedLiters = fuelUsedLiters,
+            totalTripCost = totalTripCost,
+            costPerKm = costPerKm
         )
     }
 }
